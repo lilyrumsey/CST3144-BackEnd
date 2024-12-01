@@ -14,4 +14,8 @@ app.use((req, res, next) => {
     next();
   });
 
-  
+  // Use Morgan as a logger middleware
+app.use(morgan('tiny'));
+
+
+
