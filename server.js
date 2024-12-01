@@ -55,3 +55,59 @@ async function connectToMongoDB() {
   }
 }
 
+// Middleware to log every request
+app.use((req, res, next) => {
+    console.log(`${req.method} request for '${req.url}'`);
+    next();
+  });
+  
+  const logger = winston.createLogger({
+    // Set the logging level to 'info'
+      level: 'info',  
+    // Combine multiple log formats
+      format: winston.format.combine(  
+    // Add timestamp to each log entry
+        winston.format.timestamp(),  
+        winston.format.printf(({ timestamp, level, message }) => {
+    // Format the log message with timestamp and log level
+          return `${timestamp} [${level}]: ${message}`;  
+        })
+      ),
+      transports: [
+    // Log to the console
+        new winston.transports.Console(),  
+      ],
+    });
+  
+  // Error-handling middleware
+  app.use((err, req, res, next) => {
+    console.error(err.stack); // Log the error stack
+    res.status(500).json({ error: 'Something went wrong!' });
+  });
+  
+  // Middleware to attach MongoDB client to requests
+  app.use((req, res, next) => {
+    req.dbClient = client; // Attach MongoDB client to the request object
+    next();
+  });
+  
+  // Static file middleware for images
+  app.use('/images', express.static('images', {
+    fallthrough: false, // Prevents moving to next middleware if file not found
+  }));
+  
+  // Error handling for static files
+  app.use((err, req, res, next) => {
+    if (err) {
+        if (err.code === 'ENOENT') {
+            res.status(404).json({ error: 'Image not found' });
+        } else {
+            res.status(500).json({ error: 'Server error' });
+        }
+    } else {
+        next();
+    }
+  })
+
+  
+
